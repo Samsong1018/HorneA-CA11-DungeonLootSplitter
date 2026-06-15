@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dungeon Loot Splitter — enter party loot, calculate the total, and divide it evenly among adventurers.">
+    <meta name="author" content="Amos Horne">
+    <meta name="keywords" content="dungeon, loot, splitter, party, javascript, web app">
+    <title>Dungeon Loot Splitter</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Dungeon Loot Splitter</h1>
+        <p class="subtitle">Divide the spoils fairly among your adventuring party</p>
+    </header>
+
+    <main>
+
+        <!-- Party Setup -->
+        <section class="panel">
+            <h2>Party Setup</h2>
+
+            <div class="form-group">
+                <label for="partySize">Number of Party Members:</label>
+                <input
+                    type="number"
+                    id="partySize"
+                    min="1"
+                    step="1"
+                    placeholder="e.g. 4"
+                >
+                <span class="hint">Enter 1 or more adventurers</span>
+            </div>
+
+            <div id="partySizeError" class="error-msg"></div>
+        </section>
+
+        <!-- Add Loot -->
+        <section class="panel">
+            <h2>Add Loot</h2>
+
+            <div class="form-group">
+                <label for="lootName">Loot Name:</label>
+                <input
+                    type="text"
+                    id="lootName"
+                    placeholder="e.g. Dragon Scale"
+                >
+                <span class="hint">Name of the item found</span>
+            </div>
+
+            <div class="form-group">
+                <label for="lootValue">Loot Value:</label>
+                <input
+                    type="number"
+                    id="lootValue"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 250.00"
+                >
+                <span class="hint">Gold pieces — decimals allowed</span>
+            </div>
+
+            <div class="form-group">
+                <label for="lootRarity">Rarity:</label>
+                <select id="lootRarity">
+                    <option value="common">Common (×1.0)</option>
+                    <option value="uncommon">Uncommon (×1.5)</option>
+                    <option value="rare">Rare (×2.0)</option>
+                    <option value="epic">Epic (×3.0)</option>
+                </select>
+                <span class="hint">Rarity multiplies the base value</span>
+            </div>
+
+            <div id="lootError" class="error-msg"></div>
+
+            <button type="button" id="addLootBtn">Add Loot</button>
+        </section>
+
+        <!-- Loot List -->
+        <section class="panel">
+            <h2>Loot List</h2>
+
+            <p id="emptyMsg" class="empty-msg">No loot added yet — start looting!</p>
+
+            <ul id="lootList"></ul>
+
+            <div class="total-bar">
+                <span class="total-label">Total Loot:</span>
+                <span id="runningTotal" class="total-value">$0.00</span>
+            </div>
+        </section>
+
+        <!-- Split Loot -->
+        <section class="panel">
+            <h2>Split Loot</h2>
+
+            <button type="button" id="splitLootBtn">Split Loot</button>
+
+            <div id="splitError" class="error-msg"></div>
+
+            <div id="resultsArea">
+                <div class="result-row">
+                    <span class="result-label">Total Loot:</span>
+                    <span id="splitTotal" class="result-value">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Loot Per Party Member:</span>
+                    <span id="splitPerMember" class="result-value">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logic Explanation -->
+        <section class="panel reflection">
+            <h2>Logic Explanation</h2>
+
+            <div class="reflection-grid">
+                <div class="reflection-text">
+
+                    <h3>How the Array Works</h3>
+                    <p>
+                        There's one array, <code>lootItems</code>, declared at the very top of
+                        <code>script.js</code> outside any function. That placement is key — it
+                        means the array survives between button clicks. JavaScript doesn't reset
+                        it every time someone clicks "Add Loot" the way a local variable would.
+                        Each item in the array is stored as a plain object with four properties:
+                        <code>name</code>, <code>value</code> (the multiplied final amount),
+                        <code>baseValue</code> (what the user typed), and <code>rarity</code>.
+                        Storing objects instead of raw numbers means I can render all the
+                        details later without keeping separate parallel arrays.
+                    </p>
+
+                    <h3>Where Loops Are Used</h3>
+                    <p>
+                        <code>renderLoot()</code> uses a traditional <code>for</code> loop that
+                        walks <code>i</code> from <code>0</code> up to
+                        <code>lootItems.length - 1</code>. Inside the loop, it does two things
+                        at once: adds each item's value to a running <code>total</code>
+                        variable, and builds a <code>&lt;li&gt;</code> element for that item
+                        and appends it to the list. <code>splitLoot()</code> uses its own
+                        separate <code>for</code> loop to re-total the array right before
+                        dividing — so the split is always based on a fresh calculation, not
+                        a number that might have drifted.
+                    </p>
+
+                    <h3>Conditional Logic</h3>
+                    <p>
+                        Validation runs entirely through <code>if</code> statements before
+                        anything is pushed to the array or divided. <code>addLoot()</code>
+                        checks three things in order: is the name empty, is the value a valid
+                        number, is the value negative — returning early with an error message
+                        the moment one fails. <code>splitLoot()</code> checks that party size
+                        is a number 1 or greater, and that <code>lootItems.length</code> is
+                        more than zero. <code>renderLoot()</code> checks
+                        <code>lootItems.length === 0</code> to decide whether to show the
+                        empty-state message or render the live list.
+                    </p>
+
+                </div>
+
+                <figure class="logic-figure">
+                    <img
+                        src="images/logic-flow.png"
+                        alt="Hand-drawn logic flow diagram showing addLoot validation, array storage, renderLoot loop, and splitLoot calculation"
+                        width="400"
+                    >
+                    <figcaption>Application logic flow diagram</figcaption>
+                </figure>
+
+                <figure class="validation-figure">
+                    <img
+                        src="images/validation.png"
+                        alt="Screenshot of W3C HTML validator showing no errors for this page"
+                        width="400"
+                    >
+                    <figcaption>W3C HTML validation result</figcaption>
+                </figure>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Dungeon Loot Splitter &copy; 2026 Amos Horne &mdash; Bellevue College</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+
+</body>
+</html>
