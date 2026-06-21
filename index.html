@@ -30,6 +30,7 @@
                     min="1"
                     step="1"
                     placeholder="e.g. 4"
+                    required
                 >
                 <span class="hint">Enter 1 or more adventurers</span>
             </div>
@@ -41,55 +42,64 @@
         <section class="panel">
             <h2>Add Loot</h2>
 
-            <div class="form-group">
-                <label for="lootName">Loot Name:</label>
-                <input
-                    type="text"
-                    id="lootName"
-                    placeholder="e.g. Dragon Scale"
-                >
-                <span class="hint">Name of the item found</span>
+            <div class="add-loot-form">
+                <div class="form-group">
+                    <label for="lootName">Loot Name:</label>
+                    <input
+                        type="text"
+                        id="lootName"
+                        placeholder="e.g. Dragon Scale"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="lootValue">Loot Value:</label>
+                    <input
+                        type="number"
+                        id="lootValue"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g. 250.00"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="lootQuantity">Quantity:</label>
+                    <input
+                        type="number"
+                        id="lootQuantity"
+                        min="1"
+                        step="1"
+                        placeholder="e.g. 1"
+                        required
+                    >
+                </div>
+
+                <div id="lootError" class="error-msg"></div>
+
+                <button type="button" id="addLootBtn">Add Loot</button>
             </div>
-
-            <div class="form-group">
-                <label for="lootValue">Loot Value:</label>
-                <input
-                    type="number"
-                    id="lootValue"
-                    min="0"
-                    step="0.01"
-                    placeholder="e.g. 250.00"
-                >
-                <span class="hint">Gold pieces — decimals allowed</span>
-            </div>
-
-            <div class="form-group">
-                <label for="lootRarity">Rarity:</label>
-                <select id="lootRarity">
-                    <option value="common">Common (×1.0)</option>
-                    <option value="uncommon">Uncommon (×1.5)</option>
-                    <option value="rare">Rare (×2.0)</option>
-                    <option value="epic">Epic (×3.0)</option>
-                </select>
-                <span class="hint">Rarity multiplies the base value</span>
-            </div>
-
-            <div id="lootError" class="error-msg"></div>
-
-            <button type="button" id="addLootBtn">Add Loot</button>
         </section>
 
         <!-- Loot List -->
         <section class="panel">
             <h2>Loot List</h2>
 
-            <p id="emptyMsg" class="empty-msg">No loot added yet — start looting!</p>
+            <div id="noLootMessage">No loot added.</div>
 
-            <ul id="lootList"></ul>
+            <div class="loot-table">
+                <div class="loot-header">Name</div>
+                <div class="loot-header">Value</div>
+                <div class="loot-header">Quantity</div>
+                <div class="loot-header">Remove</div>
 
-            <div class="total-bar">
-                <span class="total-label">Total Loot:</span>
-                <span id="runningTotal" class="total-value">$0.00</span>
+                <div id="lootRows"></div>
+            </div>
+
+            <div class="total-row">
+                Total Loot: $<span id="totalLoot">0.00</span>
             </div>
         </section>
 
@@ -97,18 +107,20 @@
         <section class="panel">
             <h2>Split Loot</h2>
 
-            <button type="button" id="splitLootBtn">Split Loot</button>
+            <div class="split-panel">
+                <button type="button" id="splitLootBtn">Split Loot</button>
 
-            <div id="splitError" class="error-msg"></div>
+                <div id="splitError" class="error-msg"></div>
 
-            <div id="resultsArea">
-                <div class="result-row">
-                    <span class="result-label">Total Loot:</span>
-                    <span id="splitTotal" class="result-value">—</span>
-                </div>
-                <div class="result-row">
-                    <span class="result-label">Loot Per Party Member:</span>
-                    <span id="splitPerMember" class="result-value">—</span>
+                <div id="resultsArea">
+                    <div class="result-row">
+                        <span class="result-label">Total Loot:</span>
+                        <span id="splitTotal" class="result-value">$0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Loot Per Party Member:</span>
+                        <span id="splitPerMember" class="result-value">$0.00</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -120,43 +132,59 @@
             <div class="reflection-grid">
                 <div class="reflection-text">
 
-                    <h3>How the Array Works</h3>
+                    <h3>The Loot Array Is the Source of Truth</h3>
                     <p>
-                        There's one array, <code>lootItems</code>, declared at the very top of
-                        <code>script.js</code> outside any function. That placement is key — it
-                        means the array survives between button clicks. JavaScript doesn't reset
-                        it every time someone clicks "Add Loot" the way a local variable would.
-                        Each item in the array is stored as a plain object with four properties:
-                        <code>name</code>, <code>value</code> (the multiplied final amount),
-                        <code>baseValue</code> (what the user typed), and <code>rarity</code>.
-                        Storing objects instead of raw numbers means I can render all the
-                        details later without keeping separate parallel arrays.
+                        The <code>lootItems</code> array is declared at the very top of
+                        <code>script.js</code>, outside of every function, so it persists
+                        across every click instead of resetting. The screen never decides
+                        what the totals are. It only displays whatever is currently sitting
+                        in that array. If I want to change what's on screen, I change the
+                        array first and let <code>updateUI()</code> catch up. Buttons trigger
+                        state changes. They don't calculate anything themselves.
                     </p>
 
-                    <h3>Where Loops Are Used</h3>
+                    <h3>Why Quantity Was Added</h3>
                     <p>
-                        <code>renderLoot()</code> uses a traditional <code>for</code> loop that
-                        walks <code>i</code> from <code>0</code> up to
-                        <code>lootItems.length - 1</code>. Inside the loop, it does two things
-                        at once: adds each item's value to a running <code>total</code>
-                        variable, and builds a <code>&lt;li&gt;</code> element for that item
-                        and appends it to the list. <code>splitLoot()</code> uses its own
-                        separate <code>for</code> loop to re-total the array right before
-                        dividing — so the split is always based on a fresh calculation, not
-                        a number that might have drifted.
+                        Phase 1 treated each loot entry as a single object with a flat value.
+                        Phase 2 requires total value to be calculated as value times quantity,
+                        so each loot object now stores <code>name</code>, <code>value</code>,
+                        and <code>quantity</code> as plain properties. This lets a single
+                        stack of arrows or potions be represented as one entry instead of
+                        forcing duplicate rows for identical items.
                     </p>
 
-                    <h3>Conditional Logic</h3>
+                    <h3>Where updateUI() Does Its Work</h3>
                     <p>
-                        Validation runs entirely through <code>if</code> statements before
-                        anything is pushed to the array or divided. <code>addLoot()</code>
-                        checks three things in order: is the name empty, is the value a valid
-                        number, is the value negative — returning early with an error message
-                        the moment one fails. <code>splitLoot()</code> checks that party size
-                        is a number 1 or greater, and that <code>lootItems.length</code> is
-                        more than zero. <code>renderLoot()</code> checks
-                        <code>lootItems.length === 0</code> to decide whether to show the
-                        empty-state message or render the live list.
+                        <code>updateUI()</code> is the only place where totals are calculated
+                        and the only place where the DOM gets touched for rendering. It walks
+                        the array with a traditional <code>for</code> loop to sum
+                        <code>value * quantity</code> for every item, rebuilds the loot table
+                        rows, recalculates the per-member split using current party size, and
+                        then decides what should be visible or disabled. Nothing outside
+                        <code>updateUI()</code> performs a calculation. <code>addLoot()</code>,
+                        <code>removeLoot()</code>, and the party size listener only mutate
+                        state and then call <code>updateUI()</code>.
+                    </p>
+
+                    <h3>State Controls Visibility and Enabling</h3>
+                    <p>
+                        <code>updateUI()</code> checks whether the array is empty and whether
+                        party size is a valid number 1 or greater. Based on that, it toggles a
+                        <code>.hidden</code> class on the empty message and the results area,
+                        and sets the <code>disabled</code> attribute on the Split Loot button.
+                        No inline styles are touched directly in JavaScript. Visibility is
+                        always a reflection of state, never something set independently of it.
+                    </p>
+
+                    <h3>Where Validation Protects State</h3>
+                    <p>
+                        <code>addLoot()</code> checks the name, value, and quantity before
+                        anything is pushed into the array, and returns early with an error
+                        message the moment one check fails. The party size input is validated
+                        inside <code>updateUI()</code> itself before it's used in the split
+                        calculation, so an invalid party size simply causes the results to
+                        hide rather than producing a broken number on screen. Invalid data
+                        never reaches the array, and invalid party size never reaches the math.
                     </p>
 
                 </div>
@@ -164,7 +192,7 @@
                 <figure class="logic-figure">
                     <img
                         src="images/logic-flow.png"
-                        alt="Hand-drawn logic flow diagram showing addLoot validation, array storage, renderLoot loop, and splitLoot calculation"
+                        alt="Hand-drawn logic flow diagram showing user action, state change, updateUI execution, and interface update"
                         width="400"
                     >
                     <figcaption>Application logic flow diagram</figcaption>
